@@ -1,18 +1,39 @@
 require 'mspec/runner/mspec'
 require 'mspec/runner/actions/tally'
+autoload :Config, 'rbconfig'
 
 unless defined?(RUBY_NAME) and RUBY_NAME
   if defined?(RUBY_ENGINE) and RUBY_ENGINE
     RUBY_NAME = RUBY_ENGINE
-    if defined?(ARG0)
-      RUBY_CLI = /rubinius|rbx/.match(ARG0) ? "shotgun/rubinius" : ARG0
-    else
-      RUBY_CLI = RUBY_NAME
-    end
   else
-    require 'rbconfig'
     RUBY_NAME = Config::CONFIG["RUBY_INSTALL_NAME"] || Config::CONFIG["ruby_install_name"]
-    RUBY_CLI  = RUBY_NAME
+  end
+end
+unless defined?(RUBY_EXE) and RUBY_EXE
+  # detects path to the current interpreter;
+  #  1) ARG0 if available
+  #  2) path to the built binary if in a source tree
+  #  3) $(bindir)/$(RUBY_INSTALL_NAME) if executable
+  #  otherwise, simply uses RUBY_NAME and prays that it is in PATH.
+  if defined?(ARG0) and ARG0 != File.basename(ARG0)
+    RUBY_EXE = ARG0
+  else
+    binname = RUBY_NAME + (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
+    case defined?(RUBY_ENGINE) && RUBY_ENGINE
+    when 'rbx'   then bindir, binname = 'shotgun', 'rubinius'
+    when 'jruby' then bindir = 'bin'
+    else              bindir = '.'
+    end
+
+    path = File.join(bindir, binname)
+    if File.exist?(path) && File.executable?(path)
+      RUBY_EXE = path
+    elsif path = File.join(Config::CONFIG['bindir'], binname) and 
+      File.exist?(path) && File.executable?(path) then
+      RUBY_EXE = path
+    else
+      RUBY_EXE = RUBY_NAME
+    end
   end
 end
 
