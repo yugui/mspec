@@ -71,6 +71,7 @@ class Object
       File.join(".", bin)
     when :install_name
       bin = Config::CONFIG["RUBY_INSTALL_NAME"] || Config::CONFIG["ruby_install_name"]
+      bin << (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
       File.join(Config::CONFIG['bindir'], bin)
     end
   end
@@ -80,13 +81,7 @@ class Object
       exe = ruby_exe_options option
       return exe if exe and File.exists?(exe) and File.executable?(exe)
     end
-  end
-
-  unless Object.const_defined?(:RUBY_EXE) and RUBY_EXE
-    require 'rbconfig'
-
-    RUBY_EXE = resolve_ruby_exe or
-      raise Exception, "Unable to find a suitable ruby executable."
+    nil
   end
 
   def ruby_exe(code)
@@ -95,5 +90,12 @@ class Object
     else
       `#{RUBY_EXE} #{ENV['RUBY_FLAGS']} -e #{code.inspect}`
     end
+  end
+
+  unless Object.const_defined?(:RUBY_EXE) and RUBY_EXE
+    require 'rbconfig'
+
+    RUBY_EXE = resolve_ruby_exe or
+      raise Exception, "Unable to find a suitable ruby executable."
   end
 end
